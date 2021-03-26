@@ -86,10 +86,10 @@ def main():
 
     # Avatar
     avatar = getAvatar(userInfo["user_id"])
-    template.paste(avatar, (228, 1455), avatarMask)
+    template.paste(avatar, (220, 1455), avatarMask)
 
     # Username
-    template = writeText(template, 140, userInfo["username"], (480, 1560))
+    template = writeText(template, 140, userInfo["username"], (476, 1560))
 
     # Beatmap Title
     beatmapInfo["titleWrapped"] = "\n".join(textwrap.wrap(beatmapInfo["title"], 25))
@@ -99,8 +99,8 @@ def main():
     # 228, 330
 
     acc = f'{replayInfo.acc:.2f}'
-    template = writeText(template, 150, acc, (220, 390))
-    template = writeText(template, 150, str(replayInfo.max_combo), (900, 390))
+    template = writeText(template, 180, acc, (220, 390))
+    template = writeText(template, 180, str(replayInfo.max_combo), (900, 390))
     
     scoreInfo = getScore(userInfo["username"], replayInfo.mods, beatmapInfo["beatmap_id"])
     
@@ -109,7 +109,7 @@ def main():
     else:
         pp = "Loved"
 
-    template = writeText(template, 150, pp, (1590, 390))
+    template = writeText(template, 180, pp, (1590, 390))
 
     # Mods 
     # 404, 238
