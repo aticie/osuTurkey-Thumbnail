@@ -92,8 +92,8 @@ def main():
     template = writeText(template, 140, userInfo["username"], (480, 1560))
 
     # Beatmap Title
-    beatmapInfo["titleWrapped"] = "\n".join(textwrap.wrap(beatmapInfo["title"], 20))
-    template = writeText(template, 180, beatmapInfo["titleWrapped"], center=True, fill=(255, 255, 255))
+    beatmapInfo["titleWrapped"] = "\n".join(textwrap.wrap(beatmapInfo["title"], 25))
+    template = writeText(template, 200, beatmapInfo["titleWrapped"], center=True, fill=(255, 255, 255))
 
     # Play Stats
     # 228, 330
@@ -123,10 +123,12 @@ def main():
 
     template.save("thumbnail.png")
 
+    mods = f" {''.join(replayInfo.parsed_mods)}" if replayInfo.parsed_mods else ""
+
     with open("text.txt", "w", encoding="utf-8") as file:
         file.write(f"""
 # Title
-{userInfo["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}] {acc}% {replayInfo.max_combo}x {pp}
+{userInfo["username"]} - {beatmapInfo["title"]} [{beatmapInfo["version"]}] {acc}%{mods} {replayInfo.max_combo}x {pp}{"pp" if scoreInfo["pp"] else ""}
 
 # Description
 Oyuncu: https://osu.ppy.sh/users/{userInfo["user_id"]}
