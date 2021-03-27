@@ -1,15 +1,23 @@
-from utils.crop import cropped_thumbnail
-from utils.replay_parser import ReplayParser
+import os
+import sys
+import textwrap
 from io import BytesIO
+
+import requests
 from PIL import Image, ImageDraw, ImageFont
 from dotenv import load_dotenv
-import sys
-import requests
-import textwrap
-import os
+from oppai import *
+
+from utils.crop import cropped_thumbnail
+from utils.replay_parser import ReplayParser
 
 load_dotenv()
 apiKey = os.getenv("apiKey")
+
+
+def getBeatmapFile(beatmap_id: str):
+    response = requests.get("https://osu.ppy.sh/osu/" + beatmap_id)
+    return response.content
 
 
 def getBeatmapFromMd5(Md5: str) -> dict:
@@ -52,13 +60,14 @@ def getAvatar(userId: int) -> Image:
     response = requests.get(f"https://a.ppy.sh/{userId}")
     avatarImage = Image.open(BytesIO(response.content)).convert("RGBA")
 
-    return cropped_thumbnail(avatarImage, (222, 222)) 
+    return cropped_thumbnail(avatarImage, (222, 222))
 
 
-def writeText(image: Image, fontSize: int ,text: str , xy: tuple = (0, 0), anchor: str = "lm", fill: tuple = (0, 0, 0), center: bool = False, align: str = "center"):
+def writeText(image: Image, fontSize: int, text: str, xy: tuple = (0, 0), anchor: str = "lm", fill: tuple = (0, 0, 0),
+              center: bool = False, align: str = "center"):
     draw = ImageDraw.Draw(image)
     font = ImageFont.truetype("Stuff/Gothic.ttf", fontSize)
-    
+
     if center:
         width, height = image.size
 
@@ -73,9 +82,16 @@ def writeText(image: Image, fontSize: int ,text: str , xy: tuple = (0, 0), ancho
 def main():
     replayInfo = ReplayParser(sys.argv[1])
 
+    # Initialize pp calculator
+    ez = ezpp_new()
+    ezpp_set_autocalc(ez, 1)
+
     beatmapInfo = getBeatmapFromMd5(replayInfo.beatmap_md5)
+    beatmapBytes = getBeatmapFile(beatmapInfo['beatmap_id'])
     userInfo = getUserFromUsername(replayInfo.player_name)
     cover = cropped_thumbnail(getCover(beatmapInfo["beatmapset_id"]), (3200, 1800))
+
+    ezpp_data_dup(ez, beatmapBytes.decode('utf-8'), len(beatmapBytes))  # Load beatmap into pp calc
 
     template = Image.new("RGBA", (3200, 1800), color=("#ffffff"))
     templateMask = Image.open("Stuff/Masks/TemplateMask.png").convert("RGBA")
@@ -101,13 +117,18 @@ def main():
     acc = f'{replayInfo.acc:.2f}'
     template = writeText(template, 180, acc, (220, 390))
     template = writeText(template, 180, str(replayInfo.max_combo), (900, 390))
-    
+
     scoreInfo = getScore(userInfo["username"], replayInfo.mods, beatmapInfo["beatmap_id"])
-    
+
+    ezpp_set_mods(ez, replayInfo.mods)  # Set mods in pp calc
+    ezpp_set_accuracy(ez, replayInfo.count100, replayInfo.count50)
+    ezpp_set_nmiss(ez, replayInfo.count_miss)
+    ezpp_set_combo(ez, replayInfo.max_combo)
+
     if scoreInfo["pp"]:
         pp = f'{int(float(scoreInfo["pp"]))}'
     else:
-        pp = "Loved"
+        pp = f"{int(ezpp_pp(ez))}"
 
     template = writeText(template, 180, pp, (1590, 390))
 
@@ -117,9 +138,8 @@ def main():
     for mod in replayInfo.parsed_mods:
         modImage = cropped_thumbnail(Image.open(f"Modicons/{mod}.png").convert("RGBA"), (404, 238))
         template.paste(modImage, (xOffset, 1450), modImage)
-        
-        xOffset -= 450
 
+        xOffset -= 450
 
     template.save("thumbnail.png")
 
